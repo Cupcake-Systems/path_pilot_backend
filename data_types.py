@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 
 
@@ -7,5 +9,5 @@ class User(BaseModel):
 
 class LogEntry(BaseModel):
     message: str
-    time: str
+    time: datetime
     level: str
