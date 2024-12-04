@@ -39,17 +39,6 @@ def get_db():
     finally:
         db.close()
 
-
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
-
-
-@app.get("/users/me")
-async def read_users_me(current_user: User = Depends(get_current_user)):
-    return {"user_id": current_user.user_id}
-
-
 @app.post("/logs/submit")
 async def submit_log(
         log_submissions: list[LogEntry], current_user: User = Depends(get_current_user), db=Depends(get_db)
