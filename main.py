@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker, relationship
 from auth import get_current_user, is_valid_secure_key
 from data_types import User, LogEntry
 
-app = FastAPI()
+app = FastAPI(docs_url=None, redoc_url=None)
 
 # Database setup
 DATABASE_URL = "sqlite:///./logs.db"
