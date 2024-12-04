@@ -1,3 +1,4 @@
 .idea
 *.db
 secret_key.py
+__pycache__
