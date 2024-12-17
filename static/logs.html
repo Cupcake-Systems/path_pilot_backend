@@ -36,12 +36,25 @@
             background-color: #f2dede;
         }
 
-        .message {
-            white-space: pre-wrap; /* Preserve whitespace and line breaks */
+        .fatal {
+            background-color: #d19191;
         }
 
-        #login-form {
+        .message {
+            white-space: pre-wrap; /* Preserve whitespace and line breaks */
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 3; /* Limit to 3 lines */
+            -webkit-box-orient: vertical;
+            cursor: pointer;
+        }
 
+        .log-date .date {
+            display: none;
+        }
+
+        #login-form, #user-dropdown, #log-viewer {
+            margin-bottom: 20px;
         }
     </style>
 </head>
@@ -50,14 +63,19 @@
 <div id="login-form">
     <h2>Login</h2>
     <form id="form">
-        <label for="user-id">User ID:</label>
-        <input type="text" id="user-id" name="user-id" required><br><br>
         <label for="username">Username:</label>
         <input type="text" id="username" name="username" required><br><br>
         <label for="password">Password:</label>
         <input type="password" id="password" name="password" required><br><br>
         <button type="submit">Login</button>
     </form>
+</div>
+<div id="user-dropdown" style="display:none;">
+    <h2>Select User</h2>
+    <select id="user-select">
+        <!-- User IDs will be inserted here -->
+    </select>
+    <button id="view-logs">View Logs</button>
 </div>
 <div id="log-viewer" style="display:none;">
     <table>
@@ -73,87 +91,6 @@
         </tbody>
     </table>
 </div>
-
-<script>
-    document.getElementById('form').addEventListener('submit', function (event) {
-        event.preventDefault();
-        const userId = document.getElementById('user-id').value;
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        authenticate(userId, username, password);
-    });
-
-    function authenticate(userId, username, password) {
-        fetchLogs(userId, username, password);
-    }
-
-    function escapeHtml(unsafe) {
-        return unsafe
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-    }
-
-    async function fetchLogs(userId, username, password) {
-        const response = await fetch('/logs', {
-            headers: {
-                'Accept': 'application/json',
-                'dev-username': username,
-                'dev-password': password,
-                'user-id': userId,
-            }
-        });
-
-        if (!response.ok) {
-            if (response.status === 401) {
-                alert('Unauthorized');
-            } else {
-                alert(`An error occurred: ${response.status} ${response.statusText}`);
-            }
-            return false;
-        }
-
-        const logs = await response.json();
-        const logEntries = document.getElementById('log-entries');
-
-        // Sort logs by time
-        logs.sort((a, b) => new Date(b.time) - new Date(a.time));
-
-        // Group logs by day
-        const groupedLogs = logs.reduce((acc, log) => {
-            const date = new Date(log.time).toLocaleDateString("de-DE");
-            if (!acc[date]) {
-                acc[date] = [];
-            }
-            acc[date].push(log);
-            return acc;
-        }, {});
-
-        // Create table rows for each day
-        for (const [date, logs] of Object.entries(groupedLogs)) {
-            const dateRow = document.createElement('tr');
-            dateRow.innerHTML = `<td colspan="3" style="background-color: #e0e0e0; font-weight: bold;">${date}</td>`;
-            logEntries.appendChild(dateRow);
-
-            logs.forEach(log => {
-                const row = document.createElement('tr');
-                row.className = log.level.toLowerCase();
-                row.innerHTML = `
-                    <td>${new Date(log.time).toLocaleTimeString("de-DE")}</td>
-                    <td class="message">${escapeHtml(log.message)}</td>
-                    <td>${log.level}</td>
-                `;
-                logEntries.appendChild(row);
-            });
-        }
-
-        document.getElementById('login-form').style.display = 'none';
-        document.getElementById('log-viewer').style.display = 'block';
-
-        return true;
-    }
-</script>
+<script src="logs.js"></script>
 </body>
 </html>

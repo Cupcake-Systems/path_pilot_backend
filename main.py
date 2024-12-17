@@ -73,6 +73,19 @@ async def get_logs(
     return logs
 
 
+@app.get("/user_ids")
+async def get_user_ids(
+        dev_username: Annotated[str, Header()],
+        dev_password: Annotated[str, Header()],
+        db=Depends(get_db),
+):
+    if DEV_PASSWORDS.get(dev_username) != dev_password:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    users = db.query(UserModel).all()
+    return [user.user_id for user in users]
+
+
 @app.post("/logs/submit")
 async def submit_log(
         log_submissions: list[LogEntry],
