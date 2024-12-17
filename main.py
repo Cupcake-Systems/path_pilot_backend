@@ -4,9 +4,11 @@ from fastapi.params import Header
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Index
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
+from starlette.staticfiles import StaticFiles
 
 from auth import get_current_user, is_valid_secure_key
 from data_types import User, LogEntry
+from secret_key import DEV_PASSWORDS
 
 app = FastAPI(docs_url=None, redoc_url=None)
 
@@ -51,12 +53,32 @@ def get_db():
         db.close()
 
 
+@app.get("/logs")
+async def get_logs(
+        user_id: Annotated[str, Header()],
+        dev_username: Annotated[str, Header()],
+        dev_password: Annotated[str, Header()],
+        db=Depends(get_db),
+):
+    if DEV_PASSWORDS.get(dev_username) != dev_password:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    # Ensure the user exists in the database
+    user = db.query(UserModel).filter(UserModel.user_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Fetch logs
+    logs = db.query(LogEntryModel).filter(LogEntryModel.user_id == user.id).all()
+    return logs
+
+
 @app.post("/logs/submit")
 async def submit_log(
-    log_submissions: list[LogEntry],
-    validation_token: Annotated[str, Header()],
-    current_user: User = Depends(get_current_user),
-    db=Depends(get_db),
+        log_submissions: list[LogEntry],
+        validation_token: Annotated[str, Header()],
+        current_user: User = Depends(get_current_user),
+        db=Depends(get_db),
 ):
     if not is_valid_secure_key(validation_token):
         raise HTTPException(status_code=403, detail="Invalid validation token.")
@@ -83,3 +105,6 @@ async def submit_log(
     db.commit()
 
     return {"message": f"Successfully submitted {len(log_entries)} logs."}
+
+
+app.mount("/", StaticFiles(directory="static"), name="static")
